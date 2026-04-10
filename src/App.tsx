@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FileUpload } from './components/FileUpload';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/Card';
 import { Button } from './components/ui/Button';
 import { Badge } from './components/ui/Badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './components/ui/Table';
 import { parseExcelFile, processSettlements, ComparisonResult } from './lib/excel-utils';
-import { Calculator, Download, RefreshCw, AlertCircle, CheckCircle2, Search } from 'lucide-react';
+import { Calculator, Download, RefreshCw, Search, PlusCircle, FileCode } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Toaster, toast } from 'sonner';
 import { motion, AnimatePresence } from 'motion/react';
@@ -22,6 +22,23 @@ export default function App() {
   const [results, setResults] = useState<ComparisonResult[] | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    });
+  }, []);
+
+  const handleInstall = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
 
   const handlePettyCashSelect = async (file: File) => {
     try {
@@ -77,6 +94,26 @@ export default function App() {
     XLSX.writeFile(workbook, "Settlement_Difference_Analysis.xlsx");
   };
 
+  const exportStandalone = async () => {
+    try {
+      const response = await fetch('/standalone.html');
+      const html = await response.text();
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'SettlementDiffPro_Standalone.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('Standalone HTML exported! You can open this file anywhere.');
+    } catch (error) {
+      toast.error('Failed to export standalone version');
+      console.error(error);
+    }
+  };
+
   const reset = () => {
     setPettyCashData(null);
     setSettlementData(null);
@@ -109,27 +146,39 @@ export default function App() {
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col md:flex-row md:items-center justify-between gap-4"
         >
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-              <div className="bg-zinc-900 dark:bg-zinc-50 p-2 rounded-xl">
-                <Calculator className="w-6 h-6 text-zinc-50 dark:text-zinc-900" />
-              </div>
-              Settlement Diff Pro
-            </h1>
-            <p className="text-zinc-500 dark:text-zinc-400 mt-1">
-              Automated reconciliation for petty-cash and settlement records.
-            </p>
-          </div>
-          {results && (
-            <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={reset} className="gap-2">
-                <RefreshCw className="w-4 h-4" /> Reset
-              </Button>
-              <Button onClick={downloadResults} className="gap-2 shadow-sm">
-                <Download className="w-4 h-4" /> Export Excel
-              </Button>
+          <div className="flex items-center gap-4">
+            <div className="bg-zinc-900 dark:bg-zinc-50 p-3 rounded-2xl shadow-lg shadow-zinc-200 dark:shadow-none">
+              <Calculator className="w-7 h-7 text-zinc-50 dark:text-zinc-900" />
             </div>
-          )}
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">
+                Settlement Diff Pro
+              </h1>
+              <p className="text-zinc-500 dark:text-zinc-400 text-sm">
+                Automated reconciliation for petty-cash and settlement records.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {deferredPrompt && (
+              <Button onClick={handleInstall} variant="outline" className="gap-2 border-zinc-900 text-zinc-900 hover:bg-zinc-900 hover:text-white dark:border-zinc-50 dark:text-zinc-50 dark:hover:bg-zinc-50 dark:hover:text-zinc-900">
+                <PlusCircle className="w-4 h-4" /> Install App
+              </Button>
+            )}
+            <Button variant="outline" onClick={exportStandalone} className="gap-2">
+              <FileCode className="w-4 h-4" /> Export Standalone
+            </Button>
+            {results && (
+              <>
+                <Button variant="outline" onClick={reset} className="gap-2">
+                  <RefreshCw className="w-4 h-4" /> Reset
+                </Button>
+                <Button onClick={downloadResults} className="gap-2 shadow-sm">
+                  <Download className="w-4 h-4" /> Export Excel
+                </Button>
+              </>
+            )}
+          </div>
         </motion.div>
 
         <AnimatePresence mode="wait">

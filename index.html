@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settlement Diff Pro - Standalone</title>
-    
-    <!-- Dependencies -->
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#09090b" />
+    <title>Settlement Diff Pro</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -66,23 +66,43 @@
             return inputs.filter(Boolean).join(' ');
         }
 
-        // --- Icons (Simple wrapper for Lucide) ---
+        // --- Icons (Robust wrapper for Lucide) ---
         const Icon = ({ name, className, size = 24 }) => {
             const ref = useRef(null);
             useEffect(() => {
-                if (ref.current) {
-                    ref.current.innerHTML = '';
-                    const icon = lucide.createIcons({
-                        icons: { [name]: lucide[name] },
-                        attrs: { 
-                            class: className,
-                            width: size,
-                            height: size
+                if (ref.current && window.lucide) {
+                    const iconData = window.lucide[name];
+                    if (iconData) {
+                        // Clear existing
+                        ref.current.innerHTML = '';
+                        // Create SVG element
+                        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                        svg.setAttribute('width', size);
+                        svg.setAttribute('height', size);
+                        svg.setAttribute('viewBox', '0 0 24 24');
+                        svg.setAttribute('fill', 'none');
+                        svg.setAttribute('stroke', 'currentColor');
+                        svg.setAttribute('stroke-width', '2');
+                        svg.setAttribute('stroke-linecap', 'round');
+                        svg.setAttribute('stroke-linejoin', 'round');
+                        if (className) {
+                            className.split(' ').forEach(c => svg.classList.add(c));
                         }
-                    });
+                        
+                        // Add paths from lucide data
+                        iconData[2].forEach(([tag, attrs]) => {
+                            const element = document.createElementNS('http://www.w3.org/2000/svg', tag);
+                            Object.entries(attrs).forEach(([key, value]) => {
+                                element.setAttribute(key, value);
+                            });
+                            svg.appendChild(element);
+                        });
+                        
+                        ref.current.appendChild(svg);
+                    }
                 }
             }, [name, className, size]);
-            return <span ref={ref} className="inline-flex items-center justify-center" />;
+            return <span ref={ref} className="inline-flex items-center justify-center leading-none" />;
         };
 
         // --- UI Components ---
@@ -359,7 +379,25 @@
             const [settlementData, setSettlementData] = useState(null);
             const [results, setResults] = useState(null);
             const [isProcessing, setIsProcessing] = useState(false);
-            const [searchTerm, setSearchTerm] = useState('');
+            const [deferredPrompt, setDeferredPrompt] = useState(null);
+
+            useEffect(() => {
+                window.addEventListener('beforeinstallprompt', (e) => {
+                    e.preventDefault();
+                    setDeferredPrompt(e);
+                });
+
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.register('sw.js').catch(console.error);
+                }
+            }, []);
+
+            const handleInstall = async () => {
+                if (!deferredPrompt) return;
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') setDeferredPrompt(null);
+            };
 
             const handlePettyCashSelect = async (file) => {
                 try {
@@ -436,27 +474,36 @@
                     <div className="max-w-7xl mx-auto space-y-8">
                         {/* Header */}
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                            <div>
-                                <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-                                    <div className="bg-zinc-900 p-2 rounded-xl">
-                                        <Icon name="Calculator" className="text-zinc-50" />
-                                    </div>
-                                    Settlement Diff Pro
-                                </h1>
-                                <p className="text-zinc-500 mt-1">
-                                    Automated reconciliation for petty-cash and settlement records.
-                                </p>
-                            </div>
-                            {results && (
-                                <div className="flex items-center gap-2">
-                                    <Button variant="outline" onClick={reset} className="gap-2">
-                                        <Icon name="RefreshCw" size={16} /> Reset
-                                    </Button>
-                                    <Button onClick={downloadResults} className="gap-2 shadow-sm">
-                                        <Icon name="Download" size={16} /> Export Excel
-                                    </Button>
+                            <div className="flex items-center gap-4">
+                                <div className="bg-zinc-900 p-3 rounded-2xl shadow-lg shadow-zinc-200">
+                                    <Icon name="Calculator" className="text-zinc-50" size={28} />
                                 </div>
-                            )}
+                                <div>
+                                    <h1 className="text-3xl font-bold tracking-tight text-zinc-900">
+                                        Settlement Diff Pro
+                                    </h1>
+                                    <p className="text-zinc-500 text-sm">
+                                        Automated reconciliation for petty-cash and settlement records.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                {deferredPrompt && (
+                                    <Button onClick={handleInstall} variant="outline" className="gap-2 border-zinc-900 text-zinc-900 hover:bg-zinc-900 hover:text-white">
+                                        <Icon name="PlusCircle" size={16} /> Install App
+                                    </Button>
+                                )}
+                                {results && (
+                                    <>
+                                        <Button variant="outline" onClick={reset} className="gap-2">
+                                            <Icon name="RefreshCw" size={16} /> Reset
+                                        </Button>
+                                        <Button onClick={downloadResults} className="gap-2 shadow-sm">
+                                            <Icon name="Download" size={16} /> Export Excel
+                                        </Button>
+                                    </>
+                                )}
+                            </div>
                         </div>
 
                         {!results ? (

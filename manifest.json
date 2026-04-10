@@ -2,12 +2,12 @@
   "name": "Settlement Diff Pro",
   "short_name": "SettleDiff",
   "description": "Calculate differences between petty-cash and settlement records.",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#09090b",
   "orientation": "any",
-  "scope": "/",
+  "scope": "./",
   "icons": [
     {
       "src": "https://picsum.photos/seed/settle/192/192",

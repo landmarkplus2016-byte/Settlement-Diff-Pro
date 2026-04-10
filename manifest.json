@@ -10,13 +10,13 @@
   "scope": "./",
   "icons": [
     {
-      "src": "https://picsum.photos/seed/settle/192/192",
+      "src": "https://picsum.photos/seed/finance-calc/192/192",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "https://picsum.photos/seed/settle/512/512",
+      "src": "https://picsum.photos/seed/finance-calc/512/512",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

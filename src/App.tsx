@@ -422,9 +422,6 @@ export default function App() {
                 <PlusCircle size={16} /> Install App
               </Button>
             )}
-            <Button onClick={exportStandalone} variant="ghost" size="icon" title="Export Standalone HTML">
-              <FileCode size={20} />
-            </Button>
             {results && (
               <>
                 <Button variant="outline" onClick={reset} className="gap-2">

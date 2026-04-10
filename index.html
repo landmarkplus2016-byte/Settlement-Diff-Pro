@@ -14,7 +14,7 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     
     <style>
@@ -438,7 +438,7 @@
 
             const downloadResults = () => {
                 if (!results) return;
-                const worksheet = XLSX.utils.json_to_sheet(results.map(r => ({
+                const data = results.map(r => ({
                     'Neg.': r.neg,
                     'Cluster/Mission': r.cluster,
                     'Site ID': r.siteId,
@@ -446,7 +446,69 @@
                     'Settlement Amount': r.settlementAmount,
                     'Difference': r.difference,
                     'Status': r.status
-                })));
+                }));
+
+                const worksheet = XLSX.utils.json_to_sheet(data);
+                
+                // Apply styles
+                const range = XLSX.utils.decode_range(worksheet['!ref']);
+                
+                for (let R = range.s.r; R <= range.e.r; ++R) {
+                    for (let C = range.s.c; C <= range.e.c; ++C) {
+                        const cell_address = { c: C, r: R };
+                        const cell_ref = XLSX.utils.encode_cell(cell_address);
+                        if (!worksheet[cell_ref]) continue;
+
+                        let style = {
+                            border: {
+                                top: { style: "thin", color: { rgb: "D1D5DB" } },
+                                bottom: { style: "thin", color: { rgb: "D1D5DB" } },
+                                left: { style: "thin", color: { rgb: "D1D5DB" } },
+                                right: { style: "thin", color: { rgb: "D1D5DB" } }
+                            }
+                        };
+
+                        if (R === 0) {
+                            // Header style: #0070C0 background, #FFFFFF text
+                            style = {
+                                ...style,
+                                fill: { fgColor: { rgb: "0070C0" } },
+                                font: { color: { rgb: "FFFFFF" }, bold: true }
+                            };
+                        } else {
+                            const rowData = results[R - 1];
+                            if (rowData.difference === 0) {
+                                // Zero values style: #00B050 background, #FFFFFF text
+                                style = {
+                                    ...style,
+                                    fill: { fgColor: { rgb: "00B050" } },
+                                    font: { color: { rgb: "FFFFFF" } }
+                                };
+                            } else if (rowData.difference < 0) {
+                                // Negative values style: #FF0000 background, #FFFFFF text
+                                style = {
+                                    ...style,
+                                    fill: { fgColor: { rgb: "FF0000" } },
+                                    font: { color: { rgb: "FFFFFF" } }
+                                };
+                            }
+                        }
+                        
+                        worksheet[cell_ref].s = style;
+                    }
+                }
+
+                // Set column widths for better readability
+                worksheet['!cols'] = [
+                    { wch: 20 }, // Neg.
+                    { wch: 30 }, // Cluster/Mission
+                    { wch: 15 }, // Site ID
+                    { wch: 18 }, // Petty Cash Amount
+                    { wch: 18 }, // Settlement Amount
+                    { wch: 15 }, // Difference
+                    { wch: 20 }  // Status
+                ];
+
                 const workbook = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(workbook, worksheet, "Comparison Results");
                 XLSX.writeFile(workbook, "Settlement_Difference_Analysis.xlsx");

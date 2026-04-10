@@ -1,5 +1,5 @@
 {
-  "name": "Settlement Diff Calculator",
-  "description": "A PWA to calculate differences between petty-cash and settlement excel sheets.",
+  "name": "Settlement Diff Pro",
+  "description": "A standalone PWA to calculate differences between petty-cash and settlement excel sheets. Works by simply opening index.html.",
   "requestFramePermissions": []
 }

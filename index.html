@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="manifest.json" />
-    <link rel="icon" type="image/png" href="icon.png" />
-    <link rel="apple-touch-icon" href="icon.png" />
+    <link rel="icon" type="image/png" href="https://picsum.photos/seed/finance-calc/32/32" />
+    <link rel="apple-touch-icon" href="https://picsum.photos/seed/finance-calc/180/180" />
     <meta name="theme-color" content="#09090b" />
     <title>Settlement Diff Pro</title>
     
@@ -381,13 +381,16 @@
 
             useEffect(() => {
                 const handleBeforeInstall = (e) => {
+                    console.log('PWA: beforeinstallprompt fired');
                     e.preventDefault();
                     setDeferredPrompt(e);
                 };
                 window.addEventListener('beforeinstallprompt', handleBeforeInstall);
 
                 if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.register('sw.js').catch(console.error);
+                    navigator.serviceWorker.register('./sw.js', { scope: './' })
+                        .then(reg => console.log('PWA: ServiceWorker registered', reg.scope))
+                        .catch(err => console.error('PWA: ServiceWorker registration failed', err));
                 }
 
                 return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);

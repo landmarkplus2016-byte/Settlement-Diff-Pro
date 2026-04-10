@@ -1,0 +1,5 @@
+{
+  "name": "Settlement Diff Calculator",
+  "description": "A PWA to calculate differences between petty-cash and settlement excel sheets.",
+  "requestFramePermissions": []
+}
